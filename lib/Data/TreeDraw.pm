@@ -6,7 +6,7 @@ use Class::MOP;
 use Text::SimpleTable;
 use Carp;
 
-use version; our $VERSION = qv('0.0.1');
+use version; our $VERSION = qv('0.0.2');
 
 require Exporter ;
 our @ISA = qw(Exporter) ;
@@ -24,21 +24,35 @@ Data::TreeDraw - Graphical representation of nested data structures.
 
 =head1 VERSION
 
-This document describes Data::TreeDraw version 0.0.1
+This document describes Data::TreeDraw version 0.0.2
 
 =cut
 
 =head1 DESCRIPTION
 
-While there are a number of great programs out there for Dumping and visualising heavily nested data structures these can
-often be over-whelming and hard to read. Additionally, often in order to access a particular data entry you often
-have to back-trace over a Dumped structure to find the specific code appropriate to dereference that particular
-value. This module aims to address these issues and several others by providing number of different features with a
-very simple interface that is particularly aimed at helping to visualise data-rich heavily-nested structures - see
-OVERVIEW. 
+While this module was written for me to visualise the internal structure of Perl5 Objects I was developing, it should serve
+for any data-structure where you need to quickly analyse, understand and check the internal structure and values I<and>
+more importantly I<access> it - see L</"USEFUL EXAMPLE">.
 
-This module exports a single sub-routine call C<draw>. Simply call this routine with the data structure you wish to
-print along with a HASH reference of any options you wish to pass - see OPTIONS and OVERVIEW. 
+While there are a number of great programs out there for Dumping and visualising heavily-nested and data-rich data-structures these can
+often be overwhelming and hard to read - this modules aims to address these issues by not only giving a very simple
+interface for drawing I<clear> branching structures but also a number of features that allow data-rich features e.g. long 
+Lists and List-of-Lists to be printed more naturally and succinctly for interpretation - see L</"Long Arrays"> and
+</"Lists-of-Lists"> in L</"OVERVIEW"> (See L</"OVERVIEW"> for a comprehensive list of features).
+
+Even more tricky than interpreting data-rich structures in heavily nested references can be the process of finding the
+I<exact> combination of array-elements and hash-keys to use to dereference/access a particular ARRAY ref, SCALAR value
+etc. - often requiring that you back-trace over a dumped structure to find the specific combination to use. The
+C<notation> option of this module (defaults to on - see L</"notation"> in L</"OVERVIEW">).
+
+Additionally, the output may be restricted in many ways including: printing only branches within the data-structure that
+match a specific hash key value (see L</"HASH key lookup"> in L</"OVERVIEW">), printing only those SCALAR values matching a specific
+string value (see L</"SCALAR value lookup"> in L</"OVERVIEW">), print only branches with internal nesting levels higher
+or lower than a specific level (see L</"Maximum printing depth"> and L</"Minimum printing depth"> in L</"OVERVIEW">).
+
+Alternatively you may add to the output: If you have object references within your nested structure but want the tree branching to carry on recursing into them
+so as to see their internals use the C<unwrap_object> option (see L</"Object recursion"> in L</"OVERVIEW">). If you want
+a object method introspection as implement by the L<Class::MOP> module use the C<object_methods> option (see L</"Method introspection for objects"> in L</"OVERVIEW">).
 
 This module was written by me, for me and so internally may be a bit esoteric. If there is significant
 interest I will improve and expand it.
@@ -129,8 +143,147 @@ Prints:
 
 =cut
 
+=head1 USEFUL EXAMPLE
+
+A simple example to demonstrate some of the features of this module is giving with a simple database lookup using
+L<DBI>. We want to extract usernames, passwords, addresses and email addresses of all the entries within a table in a
+single ARRAY reference and modify it. 
+
+    use DBI;
+
+    # connect to DB etc.
+
+    my $sql = q{select username, password, address, email from some_table};
+    my $db_as_a_ref = $dbh->selectall_hashref($sql);
+
+By calling the program on the generated ARRAY reference we can look at the structure:
+
+    draw($db_as_h_ref);
+
+This prints something like:
+
+     ARRAY REFERENCE (0)
+       |  
+       |__ARRAY REFERENCE (1) [ '->[0]' ]
+       |    |  
+       |    |__SCALAR = '1' (2)  [ '->[0][0]' ]
+       |    |  
+       |    |__SCALAR = 'user0' (2)  [ '->[0][1]' ]
+       |    |  
+       |    |__SCALAR = 'password0' (2)  [ '->[0][2]' ]
+       |    |  
+       |    |__SCALAR = 'address' (2)  [ '->[0][3]' ]
+       |    |  
+       |    |__SCALAR = 'user0@blah.net' (2)  [ '->[0][4]' ]
+       |  
+
+       lots more entries...
+
+       |  
+       |__ARRAY REFERENCE (1) [ '->[13]' ]
+       |    |  
+       |    |__SCALAR = '14' (2)  [ '->[13][0]' ]
+       |    |  
+       |    |__SCALAR = 'Dan' (2)  [ '->[13][1]' ]
+       |    |  
+       |    |__SCALAR = 'Not telling' (2)  [ '->[13][2]' ]
+       |    |  
+       |    |__SCALAR = 'Rio de Janeiro, Brasil' (2)  [ '->[13][3]' ]
+       |    |  
+       |    |__SCALAR = 'dsth@cpan.net' (2)  [ '->[13][4]' ]
+       |  
+
+       lots more entries...
+   
+Thus firstly we immediately see the internal structure of the entries - namely that the passes reference was an ARRAY
+reference and that each individual entry is simple another nested ARRAY reference directly within this top level ARRAY
+reference (i.e. the nesting level of every element is given in parenthesis to the side of each entry. Next, we scroll
+down to my entry (shown by SCALAR value 'Dan' with nesting level 2 within one of these nested ARRAY references at
+nesting level 1) and see my address ('Rio de Janeiro, Brasil'. I need to change my address within
+this structure to 'NY, USA'. To do this I simply append the arrow operator dereferencing notation given within the
+square brackets to the right of the entry. Thus to change my address I immediately know that I need to use ->[13][3]
+dereferencing notation. Thus we change my address:
+
+    $db_as_h_ref->->[13][3] = q{NY, USA};
+    
+Perhaps I didn't want all the other information in the data-structure as I just want to change my name. We use
+the C<scalar_val> option. 
+
+    draw($db_as_h_ref, { scalar_val => 'Dan' });
+
+This prints just:
+
+
+     SCALAR value 'Dan' found at indentation level '2':
+
+       |    |__SCALAR = 'Dan' (2)  [ '->[13][1]' ]
+       |    |  
+
+     SCALAR value 'Dan' found 1 times in nested data structure.
+
+So we immediately change my name:
+
+    $db_as_h_ref->[13][1] = q{Daniel};
+
+Instead of passing the database entries as an ARRAY reference we may have used a HASH reference:
+
+    my $sql = q{select username, password, address, email from some_table};
+    my $db_as_h_ref = $dbh->selectall_hashref($sql, q{username});
+
+In this case when we use the basic C<draw> routine we obtain:
+
+     HASH REFERENCE (0)
+       |  
+       |__'user33'=>HASH REFERENCE (1) [ '->{user33}' ]
+       |    |  
+       |    |__'email'=>SCALAR = 'user33@blah.net' (2)  [ '->{user33}{email}' ]
+       |    |  
+       |    |__'password'=>SCALAR = 'password33' (2)  [ '->{user33}{password}' ]
+       |    |  
+       |    |__'username'=>SCALAR = 'user33' (2)  [ '->{user33}{username}' ]
+       |  
+       
+       lots more entries...
+       
+       |  
+       |__'Dan'=>HASH REFERENCE (1) [ '->{Dan}' ]
+             |  
+             |__'email'=>SCALAR = 'dsth@cpan.net' (2)  [ '->{Dan}{email}' ]
+             |  
+             |__'password'=>SCALAR = 'Not telling' (2)  [ '->{Dan}{password}' ]
+             |  
+             |__'username'=>SCALAR = 'Dan' (2)  [ '->{Dan}{username}'
+
+First, the termination of the basic tree root descending from the passed HASH reference (with nesting level 0) shows
+that it´s the last of the entries in the structure. Again we immediately see the dereferencing notation we need to
+append to the passed structure. However, I really only wanted to see the entry corresponding to my details so we use the
+C<hash_key> option:
+
+
+    draw($db_as_h_ref, { hash_key => 'Dan' });
+
+This simply prints:
+
+     HASH key 'Dan' found at indentation level '1':
+
+       |__'Dan'=>HASH REFERENCE (1) [ '->{Dan}' ]
+       |  
+       |__'email'=>SCALAR = 'dsth@cpan.net' (2)  [ '->{Dan}{email}' ]
+       |  
+       |__'password'=>SCALAR = 'Not telling' (2)  [ '->{Dan}{password}' ]
+       |  
+       |__'username'=>SCALAR = 'Dan' (2)  [ '->{Dan}{username}' ]
+
+     HASH key 'Dan' found 1 times in nested data structure.
+
+=cut
+
 =head1 OVERVIEW
 
+The module exports a single sub-routine call C<draw>. Simply call this routine with the data structure you wish to
+print along with a HASH reference of any options you wish to pass - see L</"OPTIONS"> and this section. 
+
+=cut
 =head2 Tree Structure
 
 All structures are displayed as a "clear" Tree-structure branching from a single root. 
@@ -155,6 +308,7 @@ All structures are displayed as a "clear" Tree-structure branching from a single
     
      etc.
 
+=cut
 =head2 Notation
 
 The C<notation> option (defaults to on - with "1") results in the printing along side (in square-brackets) the specific REFERENCE or SCALAR
@@ -164,6 +318,7 @@ that particular value within the passed structure simply append "->[4]{hash_key}
      e.g. To access the above ARRAY reference printed as: "ARRAY REFERENCE (2) [ '->[2][3][0]' ]" 
      Simply use: $original_data_passed->[2][3][0];
 
+=cut
 =head2 Spacing
 
 For a more compressed version of the print disable the C<spaces> options by setting it to "0" (this option is enabled by default). The above Tree is printed as:
@@ -181,18 +336,21 @@ For a more compressed version of the print disable the C<spaces> options by sett
 
        etc.
 
+=cut
 =head2 Indentation Level
 
 The nesting/indentation level of ALL structures is printed along-side of the REFERENCE/SCALAR value in parenthesis:
 
      e.g. SCALAR = 'some_value' (nesting_level/e.g.4) 
 
-=head2 EMPTY STRINGS
+=cut
+=head2 Empty Strings
 
 Any SCALAR value containing an empty string is printed as that e.g. '', but to ease distinguishing it from ' ' it additionally prints [EMPTY STRING] along-side. 
 
      e.g. SCALAR = '' [EMPTY STRING]
 
+=cut
 =head2 Long Arrays
 
 With data-rich structures arrays may often have many elements. In such cases printing each SCALAR value within the array on a separate line makes reading the structure difficult:
@@ -221,6 +379,7 @@ indicate the nature of the values stored by the array).
 
 You can switch the length of array that triggers these two behaviours using the C<array_length> option (defaults to 3). See OPTIONS for further info.
 
+=cut
 =head2 Lists-of-Lists. 
 
 In cases of Lists-of-lists the readability may suffer further - especially as these structures often
@@ -286,7 +445,27 @@ structure would be printed as above instead of:
         |  
         |__ARRAY REFERENCE (2) ---LONG_LIST_OF_SCALARS--- [ length = 3 ]: 3, 3, 3 [ '->[10][2]' ]
 
-=head2 HASH keys. 
+=cut
+=head2 SCALAR value lookup
+
+You may just be interested in those parts of the structure with specific SCALAR values. In this case use the
+C<scalar_val> option. This will only print parts of the branching structure where SCALARS are encountered with a
+particular string value. See L</"scalar_val"> in L</"OPTIONS"> for usage.
+
+     SCALAR value 'blah' found at indentation level '3':
+ 
+     |    |    |__'the'=>SCALAR = 'blah' (3)  [ '->[14]{step}{the}' ]
+     |    |                      
+ 
+     SCALAR value 'blah' found at indentation level '3':
+ 
+     |         |__SCALAR = 'blah' (3)  [ '->[20]{g}[2]' ]
+     |         |                 
+
+     SCALAR value 'blah' found 2 times in nested data structure.
+
+=cut
+=head2 HASH keys
 
 As HASHES are simply unordered LISTs using a look up key HASH references are displayed just ARRAY
 references only with the hash key appended e.g.
@@ -297,12 +476,13 @@ references only with the hash key appended e.g.
                |  
                |__SCALAR = '3' (3)  [ '->[20]{g}[0]' ]
 
+=cut
 =head2 HASH key lookup
 
-You may be interested in just the values of a particular HASH entry. In this case using the C<hash_key> option you can
-start Tree printing from that particular HASH key. See OPTIONS for usage.
+You may just be interested in the values of a particular HASH entry. In this case using the C<hash_key> option you can
+start Tree printing from when that particular HASH key is encountered. See L</"hash_key"> in L</"OPTIONS"> for usage.
 
-    HASH key 'given_key' found and indentation level '5':
+    HASH key 'given_key' found at indentation level '5':
 
                     |__'given_key'=>REFERENCE-TO-REFERENCE (5)
                          |    |  
@@ -312,6 +492,7 @@ start Tree printing from that particular HASH key. See OPTIONS for usage.
 
     HASH key 'given_key' found 2 times in nested data structure.
 
+=cut
 =head2 Minimum printing depth
 
 You may not be interested in values near the root of the structure. In which case you can set the C<min_depth> option
@@ -342,6 +523,7 @@ You may not be interested in values near the root of the structure. In which cas
      |  
 
 
+=cut
 =head2 Maximum printing depth
 
 If you do not wish to view deeply nested structures you can set the C<max_depth> option (defaults to 10):
@@ -361,6 +543,7 @@ If you do not wish to view deeply nested structures you can set the C<max_depth>
 
      etc.
 
+=cut
 =head2 Object recursion.
 
 In cases where an object reference is pointed within the structure its class will be printed:
@@ -383,6 +566,7 @@ Note: while the structure is indented further - the actual indentation level in 
 just aids the identification of the type of data-type of the object within the structure. Also as yet, the C<notation>
 option is not supported with the C<object_unwrap> option.
 
+=cut
 =head2 Method introspection for objects
 
 You may additionally wish to introspect either the root structure or lower-level objects for their methods. This module
@@ -417,6 +601,7 @@ All options are passed by hash reference:
 
     draw($data, {max_depth => 3, unwrap_objects => 1, object_methods => 1} );
 
+=cut
 =head2 array_limit
 
     Name:           array_limit
@@ -425,14 +610,16 @@ All options are passed by hash reference:
     Values:         3-10.
     Default:        5.    
 
+=cut
 =head2 hash_key
 
     Name:           hash_key
-    Description:    Allows printing of just those elements within a HASH of interest within a structure.
+    Description:    Allows printing of just those branches pointed to by a particular HASH key of interest within a structure.
     Usage:          draw($data, {hash_key => q{a_key_name});
     Values:         String.     
     Default:        undef.
 
+=cut
 =head2 lol
 
     Name:           lol
@@ -441,6 +628,7 @@ All options are passed by hash reference:
     Values:         0, 1, 2.
     Default:        0.
 
+=cut
 =head2 long_array
 
     Name:           long_array
@@ -449,7 +637,7 @@ All options are passed by hash reference:
     Values:         0, 1.
     Default:        0.
 
-
+=cut
 =head2 max_depth
 
     Name:           max_depth
@@ -458,6 +646,7 @@ All options are passed by hash reference:
     Values:         0-10.
     Default:        10.
 
+=cut
 =head2 max_methods
 
     Name:           max_methods 
@@ -466,6 +655,7 @@ All options are passed by hash reference:
     Values:         1-100.
     Default:        50.    
 
+=cut
 =head2 min_depth
 
     Name:           min_depth
@@ -474,6 +664,7 @@ All options are passed by hash reference:
     Values:         0-9.
     Default:        0.
 
+=cut
 =head2 notation
 
     Name:           notation
@@ -482,6 +673,7 @@ All options are passed by hash reference:
     Values:         0, 1.
     Default:        1.
 
+=cut
 =head2 object_methods
 
     Name:           object_methods
@@ -490,6 +682,7 @@ All options are passed by hash reference:
     Values:         0, 1.
     Default:        0.
 
+=cut
 =head2 spaces
 
     Name:           spaces
@@ -498,6 +691,16 @@ All options are passed by hash reference:
     Values:         0, 1.
     Default:        1.
 
+=cut
+=head2 scalar_val
+
+    Name:           scalar_val
+    Description:    Allows printing of just those SCALAR values possessing specific string values.
+    Usage:          draw($data, {scalar_val => q{a_value_of_interest});
+    Values:         String.     
+    Default:        undef.
+
+=cut
 =head2 unwrap_objects
 
     Name:           unwrap_objects
@@ -506,6 +709,7 @@ All options are passed by hash reference:
     Values:         0, 1.
     Default:        1.
 
+=cut
 =head2 borders
 
     Name:           borders - This option is not yet fully implemented.
@@ -526,7 +730,9 @@ my %options = ( _dev_1 => 0, # prints lots of per iteration info relating to pre
                 long_array => 0,
                 array_limit => 5,
                 lol => 0,
+                #y no reason for these to exist here except to remind me - their presence means all tests must be on their being defined and not existing...
                 hash_key => undef,
+                scalar_val => undef,
                 spaces => 1,
                 #y not quite done
                 borders => 0,
@@ -543,10 +749,12 @@ my %options = ( _dev_1 => 0, # prints lots of per iteration info relating to pre
 #y due to sheer lazyness rather than pass variables directly to subs or via object attributes i have used multiple lexcial variables with full package-scope. 
 my $flag_hash_key = 0;
 my $flag_hash_key_found = 0;
+my $flag_scalar_val = 0;
+my $flag_scalar_val_found = 0;
 my $flag_max_exceeed = 0;
 my $flag_recursion = 0;
 my $flag_ref2ref = 0;
-my $flag_root_object;
+my $flag_root_object = q{};
 my @flag_HowTo;
 my $flag_root = q{};
 my $flag_lol = 0;
@@ -605,8 +813,11 @@ sub draw {
     #y THIS PUTS THE ORIGINAL VALUES IN AND THEN OVER-WRITES ONLY SPECIFICALLY PASSED VALUES - otherwise just have new passed values
     %options = (%options, %{$options_h_ref}) if $options_h_ref;
 
-    #y $flag_ref2ref is actually disable notation printing flag!!!
+    #y disable printing if looking for a hash key - $flag_ref2ref is actually disable notation printing flag!!!
     $flag_hash_key = 1 if (defined $options{hash_key});
+    
+    #y/ $key interacts with $options{hash_key} so we need to use same trick with different flag - and add it later
+    $flag_scalar_val = 1 if (defined $options{scalar_val});
     
     my ($package, $x, $line ) = caller;
     if (my $class = blessed $ref) { $ref = &_object_unwrap($ref, $class, $package); } # this needs to return the ref afterwards    
@@ -623,12 +834,24 @@ sub draw {
     $flag_last = 1;
     
     #y last print message corresponding to last data recursion
-    &_print if ($flag_ind_current_iter >= $options{min_depth} && $flag_hash_key == 0);
+    #y/ need to add condition for scalar_val
+    #&_print if ($flag_ind_current_iter >= $options{min_depth} && $flag_hash_key == 0);
+    &_print if ($flag_ind_current_iter >= $options{min_depth} && $flag_hash_key == 0 && $flag_scalar_val == 0);
+
+    #print qq{\nhere$flag_hash_key $flag_hash_key_found $flag_scalar_val $flag_scalar_val_found };
 
     #y print message if hash key given but not found
-    print qq{\nHASH key \x27$options{hash_key}\x27 not found in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found == 0);
-    print qq{\n\nHASH key \x27$options{hash_key}\x27 found $flag_hash_key_found times in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found != 0);
-    
+    # remove the test on $flag_... and simply re-use defined
+    #print qq{\nHASH key \x27$options{hash_key}\x27 not found in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found == 0);
+    print qq{\nHASH key \x27$options{hash_key}\x27 not found in nested data structure.} if (defined $options{hash_key} && $flag_hash_key_found == 0);
+    #print qq{\n\nHASH key \x27$options{hash_key}\x27 found $flag_hash_key_found times in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found != 0);
+    print qq{\n\nHASH key \x27$options{hash_key}\x27 found $flag_hash_key_found times in nested data structure.} if (defined $options{hash_key} && $flag_hash_key_found != 0);
+    #y/ print message if scalar value given but not found 
+    #print qq{\nSCALAR value \x27$options{scalar_val}\x27 not found in nested data structure.} if ($flag_scalar_val == 1 && $flag_scalar_val_found == 0);
+    print qq{\nSCALAR value \x27$options{scalar_val}\x27 not found in nested data structure.} if (defined $options{scalar_val}&& $flag_scalar_val_found == 0);
+    #print qq{\n\nSCALAR value \x27$options{scalar_val}\x27 found $flag_scalar_val_found times in nested data structure.} if ($flag_scalar_val == 1 && $flag_scalar_val_found != 0);
+    print qq{\n\nSCALAR value \x27$options{scalar_val}\x27 found $flag_scalar_val_found times in nested data structure.} if (defined $options{scalar_val}&& $flag_scalar_val_found != 0);
+
     &_clean;
 }
 
@@ -735,21 +958,47 @@ sub _recurse {
 
     # min depth and hash_key
     #&_print if ( ( $count != 1 ) && ( $current ) );
-    &_print if ( ( $count != 1 ) && ( $current ) && ($flag_ind_current_iter >= $options{min_depth}) && ($flag_hash_key == 0) );
-    
+    #y/ need to add condition for scalar_val
+    #&_print if ( ( $count != 1 ) && ( $current ) && ($flag_ind_current_iter >= $options{min_depth}) && ($flag_hash_key == 0) );
+    &_print if ( ( $count != 1 ) && ( $current ) && ($flag_ind_current_iter >= $options{min_depth}) && ($flag_hash_key == 0) && ($flag_scalar_val == 0) );
+   
+    #y turn on printing if hash key found - as with flags in general probably ought to save headaches by moving the turn off feature from _adjust_indentation to here above
+    #y only reason its there is that all decrement tests were put together...
     # rather than use an initialiser as in next line OR use exists in place of defined simply ADD extra conditions in if - i.e. if defined $key and $options{hash_key} to avoid useless use
     #$key ||= q{}; # key is used in string contect ´eq´ so give it false string - an initialiser to stop warning complaints
     #if ( ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
     if ( (defined $key) && (defined $options{hash_key}) && ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
         print qq{\n} if ($flag_hash_key_found > 0);
-        print qq{\nHASH key \x27$key\x27 found and indentation level \x27$next_element\x27:\n};
+        print qq{\nHASH key \x27$key\x27 found at indentation level \x27$next_element\x27:\n};
         $flag_hash_key_found++;
         $flag_hash_key = 0;
     }
     
-    if ( ($flag_dec == 1) && ($next_element < $options{min_depth}) && ($flag_hash_key == 0)) {
+    #y turn on printing if scalar value found - unlike above no reason to not turn off here before turning on - saves probl of testing defined $ref - i.e. turns off again when reach next scalar
+    #b turn off first - without test of defined - was there to stop warnings - but leads to not turning off till next scalar found - can remove all ifs
+    #b cos its here we don´t need to check its not the same cylcle - i.e. don´t need to have anything to do with $ref 
+    #$flag_scalar_val = 1 if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
+    #$flag_scalar_val = 1 if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
+    $flag_scalar_val = 1 if ( defined $options{scalar_val} );
+    #y/ new section for scalar_val
+    # either use NO ref or use \$ref eq q{SCALAR}
+    #if ( (defined $options{scalar_val}) && (!ref $ref) ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
+    #if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref eq $options{scalar_val}) && ($flag_scalar_val == 1) ) {
+    #y remove warning by checking for $ref
+    if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref eq $options{scalar_val}) && ($flag_scalar_val == 1) ) {
+        print qq{\n} if ($flag_scalar_val_found > 0);
+        print qq{\nSCALAR value \x27$ref\x27 found at indentation level \x27$next_element\x27:\n};
+        $flag_scalar_val_found++;
+        $flag_scalar_val = 0;
+    }
+
+    #y/ need to add condition for scalar_val
+    #if ( ($flag_dec == 1) && ($next_element < $options{min_depth}) && ($flag_hash_key == 0)) {
+    if ( ($flag_dec == 1) && ($next_element < $options{min_depth}) && ($flag_hash_key == 0) && ($flag_scalar_val == 0) ) {
         print qq{\n\nIndent decrementing to \x27$next_element\x27 below min_depth level of \x27$options{min_depth}\x27};
         print qq{\n} if ($flag_hash_key_found == 0);
+        #y/ add scalar_val equivalent
+        print qq{\n} if ($flag_scalar_val_found == 0);
     }
 
     #r hash incrementation //////////////////////////////////////////////////////////////
@@ -763,7 +1012,9 @@ sub _recurse {
     #r array incrementation /////////////////////////////////////////////////////////////
     else { $flag_HowTo[$flag_ind_next_iter-1]++ if $count > 1;    }
     
-    &_adjust_indent;
+    # pass reference for no reason - key needs to be passed temporarily
+    #&_adjust_indent;
+    &_adjust_indent($ref,$key);
 
     #y check reference type etc.
     &_if_elsif_ref($ref, $key);
@@ -1229,6 +1480,8 @@ sub _lol_max_columns {
 
 sub _adjust_indent {
     
+    my ($ref, $key) = @_;
+
     #y HACK TO FIX LONG ARRAY ALIGNMENT BUG - just removed -1 for each element index
     if ( ( $count > 2 ) && ( ( $flag_long_array == 1 ) || ( $flag_lol == 1 ) ) ) {
         for my $i (0..$#flag_indent_record) { $IndArray[$i] = $flag_indent_record[$i] > 0 ? $unit3 : $unit1; }
@@ -1259,9 +1512,31 @@ sub _adjust_indent {
 
         #y turn notation back on
         $flag_ref2ref = 0;
-        #y turn printing back off
-        $flag_hash_key = 1 if (defined $options{hash_key});
+
+        #/ this is only here as we have it in the general decrement testing place - but ought to simply put before turning printint on
+        #y turn printing back off if printing hash-keys - here was bug of 0.0.1
+        #/ BUG RESOLUTION - duh. recurse prints last round of data. if hash key is found it turns ON printing. this part
+        #/ here turns off printing when we later decrement - however, IF the previous round had a decrement then we turn
+        #/ printing ON and OFF again before ever printing - need to add condition to stop turning off on same round -
+        #/ can either compare value to $key OR store key OR store count when turning on printing - thus avoiding this bug
+        #$flag_hash_key = 1 if (defined $options{hash_key});
+        #r just check that the key isn´t the current key and thereby avoid switching off in same iteration - duh
+        $flag_hash_key = 1 if ( (defined $options{hash_key}) && ($key ne $options{hash_key}));
+        #print qq{\ntemp - we are decrementing and key is $key};
     }
+
+    #/ AS THIS HAS NO REASON TO BE HERE WE REMOVE IT AND PUT IT ABOVE PRINT TURN ON - so don´t have issues about testing for $ref
+    #y/ the only diff with scalar_val is we want to turn it off at every cycle and not just decrements - 
+    #/ to avoid the same bug as with the nasty one above we will need to check value of ref - so handy we passed it... - test with eith !ref $ref or ref \$ref eq q{SCALAR}
+    #y need to check that scalar_val exists to stop warnings...
+    #$flag_scalar_val = 1 if ( (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
+    #$flag_scalar_val = 1 if ( (exists $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
+    #if (exists $options{scalar_val}) { $flag_scalar_val = 1 if ( (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) ); }
+    #y you have the value in the initial hash - i.e. can´t use exists - need defined!!! - should remove from options initilisation
+    #$flag_scalar_val = 1 if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
+    #y remove warning by checking $ref for defindness
+    #/ this leads to other problem - i.e. unlike with hash_key by putting defined on $ref to avoid turning off in same cycle we don´t turn of till next scalar
+    #$flag_scalar_val = 1 if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
 
     if ($count > 2) {for my $i (0..$#flag_indent_record-1) { $IndArray[$i] = $flag_indent_record[$i] > 0 ? $unit3 : $unit1; } }
 
@@ -1288,7 +1563,7 @@ sub _array_all_scl_test {
 
 sub _clean {
 
-    my @list = ($flag_root_object, $flag_class, $last_thing, $current_name, $basic, $basic_plus, $flag_all_scl_and_long, $scl_add,
+    my @list = ($flag_class, $last_thing, $current_name, $basic, $basic_plus, $flag_all_scl_and_long, $scl_add,
     $flag_new_id, $flag_ind_next_iter, $flag_ind_current_iter, $lol, $current_struc, $current, $flag_is_last, $flag_long_struc, $flag_now);
 
     for (@list) { undef $_ }
@@ -1301,8 +1576,11 @@ sub _clean {
     undef @IndArray;
     undef @root;
 
+    $flag_root_object = q{};
     $flag_hash_key = 0;
     $flag_hash_key_found = 0;
+    $flag_scalar_val = 0;
+    $flag_scalar_val_found = 0;
     $flag_max_exceeed = 0;
     $flag_recursion = 0;
     $flag_ref2ref = 0;
@@ -1321,6 +1599,13 @@ sub _clean {
     $flag_last = 0;
     $flag_long_array = 0;
 
+    #/ cos we have a silly use of package-scoped lexicals we need to remove all the entries put into the hash - removed hash_hey to stop warnings about undef
+    #print qq{\nhere is the hash of options }, %options;
+    undef %options;
+    #print qq{\nhere is the hash of options }, %options;
+    %options = ( _dev_1 => 0, _dev_2 => 0, _dev_3 => 0, notation => 1, long_array => 0, array_limit => 5, lol => 0, 
+                 spaces => 1, borders => 0, max_depth => 10, min_depth => 0, unwrap_objects => 0, object_methods => 0, max_methods => 50, );
+    
     return;
 }
 
@@ -1366,7 +1651,7 @@ Daniel S. T. Hughes  C<< <dsth@cantab.net> >>
 
 =cut
 
-=head1 SEE ASLO
+=head1 SEE ALSO
 
 L<Data::Dumper>, L<Data::TreeDumper>.
 

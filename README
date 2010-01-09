@@ -1,4 +1,4 @@
-Data-TreeDraw version 0.0.1
+Data-TreeDraw version 0.0.2
 
 While there are a number of great programs out there for Dumping and visualising heavily nested data structures these can
 often be over-whelming and hard to read. Additionally, often in order to access a particular data entry you often
