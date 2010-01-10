@@ -6,7 +6,7 @@ use Class::MOP;
 use Text::SimpleTable;
 use Carp;
 
-use version; our $VERSION = qv('0.0.2');
+use version; our $VERSION = qv('0.0.3');
 
 require Exporter ;
 our @ISA = qw(Exporter) ;
@@ -24,37 +24,37 @@ Data::TreeDraw - Graphical representation of nested data structures.
 
 =head1 VERSION
 
-This document describes Data::TreeDraw version 0.0.2
+This document describes Data::TreeDraw version 0.0.3
 
 =cut
 
 =head1 DESCRIPTION
 
-While this module was written for me to visualise the internal structure of Perl5 Objects I was developing, it should serve
+While this module was written for me to visualise the internal structure of Perl5 Objects I was developing it should serve
 for any data-structure where you need to quickly analyse, understand and check the internal structure and values I<and>
-more importantly I<access> it - see L</"USEFUL EXAMPLE">.
+more importantly I<access> it - see L</USEFUL EXAMPLE>.
 
 While there are a number of great programs out there for Dumping and visualising heavily-nested and data-rich data-structures these can
 often be overwhelming and hard to read - this modules aims to address these issues by not only giving a very simple
 interface for drawing I<clear> branching structures but also a number of features that allow data-rich features e.g. long 
-Lists and List-of-Lists to be printed more naturally and succinctly for interpretation - see L</"Long Arrays"> and
-</"Lists-of-Lists"> in L</"OVERVIEW"> (See L</"OVERVIEW"> for a comprehensive list of features).
+Lists and List-of-Lists to be printed more naturally and succinctly for interpretation - see L</Long Arrays> and
+L</Lists-of-Lists> in L</OVERVIEW> (See L</OVERVIEW> and L</OPTIONS> for a comprehensive list of features).
 
 Even more tricky than interpreting data-rich structures in heavily nested references can be the process of finding the
 I<exact> combination of array-elements and hash-keys to use to dereference/access a particular ARRAY ref, SCALAR value
-etc. - often requiring that you back-trace over a dumped structure to find the specific combination to use. The
-C<notation> option of this module (defaults to on - see L</"notation"> in L</"OVERVIEW">).
+etc. - often requiring that you manually back-trace over a dumped structure to find the specific combination to use. The
+C<notation> option of this module (defaults to on - see L</notation> in L</OVERVIEW>).
 
 Additionally, the output may be restricted in many ways including: printing only branches within the data-structure that
-match a specific hash key value (see L</"HASH key lookup"> in L</"OVERVIEW">), printing only those SCALAR values matching a specific
-string value (see L</"SCALAR value lookup"> in L</"OVERVIEW">), print only branches with internal nesting levels higher
-or lower than a specific level (see L</"Maximum printing depth"> and L</"Minimum printing depth"> in L</"OVERVIEW">).
+match a specific hash key value (see L</HASH key lookup> in L</OVERVIEW>), printing only those SCALAR values matching a specific
+string value (see L</SCALAR value lookup> in L</OVERVIEW>), print only branches with internal nesting levels higher
+or lower than a specific level (see L</Maximum printing depth> and L</Minimum printing depth> in L</OVERVIEW>).
 
 Alternatively you may add to the output: If you have object references within your nested structure but want the tree branching to carry on recursing into them
-so as to see their internals use the C<unwrap_object> option (see L</"Object recursion"> in L</"OVERVIEW">). If you want
-a object method introspection as implement by the L<Class::MOP> module use the C<object_methods> option (see L</"Method introspection for objects"> in L</"OVERVIEW">).
+so as to see their internals use the C<unwrap_object> option (see L</Object recursion> in L</OVERVIEW>). If you want
+a object method introspection as implement by the L<Class::MOP> module use the C<object_methods> option (see L</Method introspection for objects> in L</OVERVIEW>).
 
-This module was written by me, for me and so internally may be a bit esoteric. If there is significant
+This module was written by me, for me, and so internally may be a bit esoteric. If there is significant
 interest I will improve and expand it.
 
 =cut
@@ -195,7 +195,7 @@ This prints something like:
 
        lots more entries...
    
-Thus firstly we immediately see the internal structure of the entries - namely that the passes reference was an ARRAY
+First we immediately see the internal structure of the entries - namely that the passes reference was an ARRAY
 reference and that each individual entry is simple another nested ARRAY reference directly within this top level ARRAY
 reference (i.e. the nesting level of every element is given in parenthesis to the side of each entry. Next, we scroll
 down to my entry (shown by SCALAR value 'Dan' with nesting level 2 within one of these nested ARRAY references at
@@ -281,7 +281,7 @@ This simply prints:
 =head1 OVERVIEW
 
 The module exports a single sub-routine call C<draw>. Simply call this routine with the data structure you wish to
-print along with a HASH reference of any options you wish to pass - see L</"OPTIONS"> and this section. 
+print along with a HASH reference of any options you wish to pass - see L</OPTIONS> and this section. 
 
 =cut
 =head2 Tree Structure
@@ -450,7 +450,7 @@ structure would be printed as above instead of:
 
 You may just be interested in those parts of the structure with specific SCALAR values. In this case use the
 C<scalar_val> option. This will only print parts of the branching structure where SCALARS are encountered with a
-particular string value. See L</"scalar_val"> in L</"OPTIONS"> for usage.
+particular string value. See L</scalar_val> in L</OPTIONS> for usage.
 
      SCALAR value 'blah' found at indentation level '3':
  
@@ -480,7 +480,7 @@ references only with the hash key appended e.g.
 =head2 HASH key lookup
 
 You may just be interested in the values of a particular HASH entry. In this case using the C<hash_key> option you can
-start Tree printing from when that particular HASH key is encountered. See L</"hash_key"> in L</"OPTIONS"> for usage.
+start Tree printing from when that particular HASH key is encountered. See L</hash_key> in L</OPTIONS> for usage.
 
     HASH key 'given_key' found at indentation level '5':
 
@@ -544,7 +544,7 @@ If you do not wish to view deeply nested structures you can set the C<max_depth>
      etc.
 
 =cut
-=head2 Object recursion.
+=head2 Object recursion
 
 In cases where an object reference is pointed within the structure its class will be printed:
 
@@ -730,11 +730,9 @@ my %options = ( _dev_1 => 0, # prints lots of per iteration info relating to pre
                 long_array => 0,
                 array_limit => 5,
                 lol => 0,
-                #y no reason for these to exist here except to remind me - their presence means all tests must be on their being defined and not existing...
                 hash_key => undef,
                 scalar_val => undef,
                 spaces => 1,
-                #y not quite done
                 borders => 0,
                 max_depth => 10,
                 min_depth => 0,
@@ -744,9 +742,7 @@ my %options = ( _dev_1 => 0, # prints lots of per iteration info relating to pre
 );
 #=fe
 
-#r purge all OLD and uncecessary vars!!!
 #=fs Package Scoped Lexicals 
-#y due to sheer lazyness rather than pass variables directly to subs or via object attributes i have used multiple lexcial variables with full package-scope. 
 my $flag_hash_key = 0;
 my $flag_hash_key_found = 0;
 my $flag_scalar_val = 0;
@@ -798,25 +794,20 @@ my $flag_now;
 my $flag_long_array = 0;
 #=fe
 
-#r atm objects are copied to new location to shield them...
 sub draw {
 
     my $ref = shift;
    
-    #y needs to be actual hash passed and not ref - otherwise you over-write the address and then loose everything in default
     my $options_h_ref = shift if $_[0]; # can use if @_ or do it before unpacking the rest... blah
 
     croak qq{\nArguments must be passed as HASH reference.} if ( ( $options_h_ref ) && ( ref $options_h_ref ne q{HASH} ) );
 
     &_check_options($options_h_ref) if $options_h_ref;
 
-    #y THIS PUTS THE ORIGINAL VALUES IN AND THEN OVER-WRITES ONLY SPECIFICALLY PASSED VALUES - otherwise just have new passed values
     %options = (%options, %{$options_h_ref}) if $options_h_ref;
 
-    #y disable printing if looking for a hash key - $flag_ref2ref is actually disable notation printing flag!!!
     $flag_hash_key = 1 if (defined $options{hash_key});
     
-    #y/ $key interacts with $options{hash_key} so we need to use same trick with different flag - and add it later
     $flag_scalar_val = 1 if (defined $options{scalar_val});
     
     my ($package, $x, $line ) = caller;
@@ -826,30 +817,19 @@ sub draw {
    
     print qq{\nStarting print at depth $options{min_depth}.\n} if $options{min_depth} > 0;
 
-    #y the recursion process
     &_recurse($ref);
 
     push @root, $unit1 if ( ( $flag_inc == 1 ) && ( $count != 2 ) );
     
     $flag_last = 1;
     
-    #y last print message corresponding to last data recursion
-    #y/ need to add condition for scalar_val
-    #&_print if ($flag_ind_current_iter >= $options{min_depth} && $flag_hash_key == 0);
     &_print if ($flag_ind_current_iter >= $options{min_depth} && $flag_hash_key == 0 && $flag_scalar_val == 0);
 
-    #print qq{\nhere$flag_hash_key $flag_hash_key_found $flag_scalar_val $flag_scalar_val_found };
 
-    #y print message if hash key given but not found
-    # remove the test on $flag_... and simply re-use defined
-    #print qq{\nHASH key \x27$options{hash_key}\x27 not found in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found == 0);
     print qq{\nHASH key \x27$options{hash_key}\x27 not found in nested data structure.} if (defined $options{hash_key} && $flag_hash_key_found == 0);
-    #print qq{\n\nHASH key \x27$options{hash_key}\x27 found $flag_hash_key_found times in nested data structure.} if ($flag_hash_key == 1 && $flag_hash_key_found != 0);
     print qq{\n\nHASH key \x27$options{hash_key}\x27 found $flag_hash_key_found times in nested data structure.} if (defined $options{hash_key} && $flag_hash_key_found != 0);
-    #y/ print message if scalar value given but not found 
-    #print qq{\nSCALAR value \x27$options{scalar_val}\x27 not found in nested data structure.} if ($flag_scalar_val == 1 && $flag_scalar_val_found == 0);
+    
     print qq{\nSCALAR value \x27$options{scalar_val}\x27 not found in nested data structure.} if (defined $options{scalar_val}&& $flag_scalar_val_found == 0);
-    #print qq{\n\nSCALAR value \x27$options{scalar_val}\x27 found $flag_scalar_val_found times in nested data structure.} if ($flag_scalar_val == 1 && $flag_scalar_val_found != 0);
     print qq{\n\nSCALAR value \x27$options{scalar_val}\x27 found $flag_scalar_val_found times in nested data structure.} if (defined $options{scalar_val}&& $flag_scalar_val_found != 0);
 
     &_clean;
@@ -902,7 +882,7 @@ sub _object_unwrap {
     my ($ref, $class, $package) = @_;
     
     my $reftype = reftype($ref);
-    #y done in hurry - check?!? #\do { my $foo } and do { \my $foo },i #my $ref = \do{my $some_scalar};
+    
     $flag_root_object = q{}.$ref;
     
     if ($reftype eq q{SCALAR}) { $ref = \do { my $ref} } 
@@ -914,7 +894,6 @@ sub _object_unwrap {
 
     &_object_methods($class) if ($options{object_methods} == 1 && $flag_recursion == 0);
 
-    # simplest way to find object data-type #e.g. poo=ARRAY(0x9ca92c8).
     return $ref;
 
 }
@@ -930,7 +909,6 @@ sub _object_methods {
             if (scalar @methods < $options{max_methods}) {
             # [ map { $_->fully_qualified_name } @methods]
             
-            #y no point in doing this twice...
             my @method_names = map { $_->fully_qualified_name } @methods;
                 
                 my $t2 = Text::SimpleTable->new([&_array_max_length(\@method_names), qq{Methods}]);
@@ -940,7 +918,6 @@ sub _object_methods {
                     $t2->row($method);
                 }
                 
-                #$t2->draw;
                 print qq{\n}, $t2->draw;
             } 
             else { print qq{\nClass \x27$class\x27 has more than $options{max_methods} methods.\n} }
@@ -948,7 +925,6 @@ sub _object_methods {
         else { print qq{\nClass \x27$class\x27 has no methods.\n} }         
 }
 
-#r this is where we have the issues with notation - with BOTH ref and object recursion
 sub _recurse { 
  
 
@@ -956,17 +932,8 @@ sub _recurse {
     
     if ($count > 1)  {for my $i (0..$#flag_indent_record) { $root[$i] = $flag_indent_record[$i] > 0 ? $unit3 : $unit1; }}
 
-    # min depth and hash_key
-    #&_print if ( ( $count != 1 ) && ( $current ) );
-    #y/ need to add condition for scalar_val
-    #&_print if ( ( $count != 1 ) && ( $current ) && ($flag_ind_current_iter >= $options{min_depth}) && ($flag_hash_key == 0) );
     &_print if ( ( $count != 1 ) && ( $current ) && ($flag_ind_current_iter >= $options{min_depth}) && ($flag_hash_key == 0) && ($flag_scalar_val == 0) );
    
-    #y turn on printing if hash key found - as with flags in general probably ought to save headaches by moving the turn off feature from _adjust_indentation to here above
-    #y only reason its there is that all decrement tests were put together...
-    # rather than use an initialiser as in next line OR use exists in place of defined simply ADD extra conditions in if - i.e. if defined $key and $options{hash_key} to avoid useless use
-    #$key ||= q{}; # key is used in string contect ´eq´ so give it false string - an initialiser to stop warning complaints
-    #if ( ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
     if ( (defined $key) && (defined $options{hash_key}) && ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
         print qq{\n} if ($flag_hash_key_found > 0);
         print qq{\nHASH key \x27$key\x27 found at indentation level \x27$next_element\x27:\n};
@@ -974,17 +941,8 @@ sub _recurse {
         $flag_hash_key = 0;
     }
     
-    #y turn on printing if scalar value found - unlike above no reason to not turn off here before turning on - saves probl of testing defined $ref - i.e. turns off again when reach next scalar
-    #b turn off first - without test of defined - was there to stop warnings - but leads to not turning off till next scalar found - can remove all ifs
-    #b cos its here we don´t need to check its not the same cylcle - i.e. don´t need to have anything to do with $ref 
-    #$flag_scalar_val = 1 if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
-    #$flag_scalar_val = 1 if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
     $flag_scalar_val = 1 if ( defined $options{scalar_val} );
-    #y/ new section for scalar_val
-    # either use NO ref or use \$ref eq q{SCALAR}
-    #if ( (defined $options{scalar_val}) && (!ref $ref) ($key eq $options{hash_key}) && ($flag_hash_key == 1) ) {
-    #if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref eq $options{scalar_val}) && ($flag_scalar_val == 1) ) {
-    #y remove warning by checking for $ref
+    
     if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref eq $options{scalar_val}) && ($flag_scalar_val == 1) ) {
         print qq{\n} if ($flag_scalar_val_found > 0);
         print qq{\nSCALAR value \x27$ref\x27 found at indentation level \x27$next_element\x27:\n};
@@ -992,36 +950,29 @@ sub _recurse {
         $flag_scalar_val = 0;
     }
 
-    #y/ need to add condition for scalar_val
-    #if ( ($flag_dec == 1) && ($next_element < $options{min_depth}) && ($flag_hash_key == 0)) {
     if ( ($flag_dec == 1) && ($next_element < $options{min_depth}) && ($flag_hash_key == 0) && ($flag_scalar_val == 0) ) {
         print qq{\n\nIndent decrementing to \x27$next_element\x27 below min_depth level of \x27$options{min_depth}\x27};
         print qq{\n} if ($flag_hash_key_found == 0);
-        #y/ add scalar_val equivalent
         print qq{\n} if ($flag_scalar_val_found == 0);
     }
 
-    #r hash incrementation //////////////////////////////////////////////////////////////
+    #r hash incrementation 
     if ($key) { $flag_HowTo[$flag_ind_next_iter-1] = qq{\{$key\}} if $count > 1;    }
 
-    #b REF incrementation ///////////////////////////////////////////////////////////////
+    #b REF incrementation 
     #   elsif (ref $ref eq q{REF}) {
     #    $flag_HowTo[$flag_ind_next_iter-1]++ if $count > 1;    
     #    print qq{\nreference};
     #    $flag_HowTo[$flag_ind_current_iter] = q{burpy} if $count > 1; }
-    #r array incrementation /////////////////////////////////////////////////////////////
+    #r array incrementation 
     else { $flag_HowTo[$flag_ind_next_iter-1]++ if $count > 1;    }
     
-    # pass reference for no reason - key needs to be passed temporarily
-    #&_adjust_indent;
     &_adjust_indent($ref,$key);
 
-    #y check reference type etc.
     &_if_elsif_ref($ref, $key);
 
 }
 
-#/ ANYHTING THAT RECURSES - whether over an array, a hash, or just a single step into a ref - NEEDS TO PASS THE KEY IN CASE OF HIGHER LEVEL HASHES - put in element?!?
 sub _if_elsif_ref {
     
     my ($ref, $key) = @_;
@@ -1030,31 +981,22 @@ sub _if_elsif_ref {
     if ($next_element >= $options{max_depth}+1) { &_exceeds_depth($ref, $key) }
     
     #y (2) undefined ref - i.e. not a reference...
-    #if (!ref $ref) { 
     elsif (!ref $ref) { &_type_ref_undef($ref, $key); } 
 
     #y (3) stupid handling - handing empty structure 
-    #elsif ($current = _undefined($ref)) {}
     elsif (my $message = _undefined($ref)) {$current = qq{$message ($next_element) } }
 
     #y (4) check for cyclic references - i.e. having same value as root
-    #elsif ( ( ref $ref eq q{ARRAY} || ref $ref eq q{HASH} ) && ( $ref eq $flag_root ) ) { $current = qq{CYCLIC REFERENCE: $ref} }
     elsif ( ( ( ref $ref eq q{ARRAY} || ref $ref eq q{HASH} ) && ( $ref eq $flag_root ) ) || $ref eq $flag_root_object ) { $current = qq{CYCLIC REFERENCE ($next_element)} }
 
     #y (5) LOLs
-    # making lol and long_array separate
-    #elsif ( ( ref $ref eq q{ARRAY} ) && ( $options{long_array} < 0 ) && ( scalar @{$ref} > 1 ) && ( &array_lol_test($ref) == 1 ) ) {
     elsif ( ( ref $ref eq q{ARRAY} ) && ( $options{lol} > 0 ) && ( scalar @{$ref} > 1 ) && ( &_array_lol_test($ref) == 1 ) ) { &_type_ref_lol($ref, $key); }
 
     #y (6) Scalar only arrays
-    # do everything as usual with an array - EXCEPT we don´t recurse
-    # making lol and long_array separate
-    #elsif ( ( ref $ref eq q{ARRAY} ) && ( &array_all_scl_test($ref) ) && ( scalar @{$ref} > 1 ) && ( $options{long_array} > 0) ) {
     elsif ( ( ref $ref eq q{ARRAY} ) && ( &_array_all_scl_test($ref) ) && ( scalar @{$ref} > 1 ) && ($options{long_array} == 1) ) { &_type_ref_array_of_scalars($ref, $key); }
 
     #y (7) standard arrays
     elsif (ref $ref eq q{ARRAY} ) { 
-        #/ atm using for to loop through array instead of map that re-allocates memory - only the last statement is relevant for recursion
         for my $i (@$ref) { 
             &_type_array($ref, $key);
             &_recurse($i)}; 
@@ -1063,19 +1005,14 @@ sub _if_elsif_ref {
     #y (8) hash
     elsif (ref $ref eq q{HASH} )  { 
         for my $i (keys %{$ref}) { 
-            #/ need to account for nested hashes - i.e. must always pass key if it exists
-            #&_type_hash($ref);
             &_type_array($ref, $key);
             &_recurse($ref->{$i}, $i)
         }; 
-            #$_ => recurse($ref->{$_}) } (keys %{$ref})    }; 
-            #$_ => _deep_copy_references($ref->{$_}) } @keys  }; 
     } 
     
     #y (9) object
     elsif (my $class = blessed $ref) { 
         if ($options{unwrap_objects} == 0) { $current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) }; }
-        #/ here we need to return the unwrapped object and give recursion
         else { &_object_recursion($ref, $key, $class) }
     }
 
@@ -1093,7 +1030,6 @@ sub _if_elsif_ref {
    
 
     #y (13) stupid handling - handling ref2refs to scalars will need the same treatement as references i.e. need to recurse
-    # this only happens if you´ve been handled a ref2ref with sclar wrapped inside - don´t need the undef part - was done in stupidity 1 
     elsif (ref $ref eq q{SCALAR}){
         &_type_array($ref, $key);
         &_recurse(${$ref});
@@ -1104,17 +1040,11 @@ sub _if_elsif_ref {
 }
 
 sub _exceeds_depth {
-    # doesn´t actually use $key - is this an f´up?!?
     my ($ref, $key) = @_;
     $flag_ref2ref = 1;
     my $message = qq{EXCEEDS MAX NESTING DEPTH ($next_element)};
 
     my $thing ; #   = blessed $ref      ?    qq{OBJECT}
-    
-    #my $thing    = blessed $ref      ?    qq{OBJECT}
-    #             : ref $ref          ?    ref $ref, q{ REFERENCE}
-    #            : ref \$ref         ?    ref \$ref
-    #            :                        q{};
     
     if (my $class = blessed $ref) { $thing = qq{OBJECT OF CLASS \x27$class\x27} }
     elsif (ref $ref eq q{REF}) { $thing = qq{REFERENCE-TO-REFERENCE} }
@@ -1141,8 +1071,6 @@ sub _type_ref_undef {
 
     my $len = scalar @flag_HowTo;
 
-    # twat len won´t change as its not part of loop
-    #while ($len > $next_element) { pop @flag_HowTo }
     while (scalar @flag_HowTo  > $next_element) { pop @flag_HowTo }
 
 }
@@ -1150,13 +1078,10 @@ sub _type_ref_undef {
 sub _type_ref_lol {
     
             my ($ref, $key) = @_;
-            
             &_flags($ref); 
-            #y can´t be bothered to pass long as an arguement - just flick a flag
             $flag_lol = 1;
             &_new_detection($ref, $key);
             &_more_flags($ref);
-            #/ probably ought to copy it
             $lol = [@{$ref}];
 
 }
@@ -1207,10 +1132,6 @@ sub _object_recursion {
 
 sub _print {
 
-    #r TWAT modification of globals w/o localising!!!
-    #$" = undef;
-    #local $, = undef; # not used - in no case is a list out of interpolation context
-    # we give it a value to stop warnings complaining about use of unitialised variable
     local $" = q{};
     
     print qq{\n@IndArray$current};
@@ -1227,7 +1148,6 @@ sub _print {
         #my $stringify = qq{\x27->[$stringify]\x27 };
         $stringify = qq{\x27->[$stringify]\x27 };
         $stringify =~ s/\[-1\]\'\s\z/\' /xms;
-        #y need to recusre for this one - i.e. either return a list of use while with g? y no, no, no - this is a substitution - just use g flag
         #$stringify =~ s/\[\{(.+)\}\]/\{\1\}/xms;
         
         # change to hash notation
@@ -1259,8 +1179,6 @@ sub _print {
         } 
     }
 
-    #/ making lol and long_array separate
-    #&_print_lol if ( ( $flag_lol == 1 ) && ( $options{long_array} == -2 ) );
     &_print_lol if ( ( $flag_lol == 1 ) && ( $options{lol} == 2 ) );
 
     if ($options{object_methods} == 1 && $flag_object == 1) {
@@ -1363,7 +1281,6 @@ sub _flags {
 
 }
 
-#r this is second place of notation issues
 sub _new_detection {
 
     my ($ref, $key) = @_;
@@ -1380,17 +1297,11 @@ sub _new_detection {
             $flag_indent_record[$flag_ind_current_iter] = scalar (keys %{$ref});
         }
         elsif (ref $ref eq q{REF} || ref $ref eq q{SCALAR} || blessed $ref) {
-            #$flag_long_struc = 1 if (scalar (keys %{$ref}) > 1);
-            #$flag_length{$ref} = scalar (keys %{$ref});
             $flag_indent_record[$flag_ind_current_iter] = 1;
-            #$flag_max_exceeed = 0;
         }
 
-    #/ will abolish by using $element?!? - as with $key
-    #y initialise a structure: -1 is ignored on printing but also means that y by incrementing we have 0... with all subdata entries
+    #y initialise a structure: -1 is ignored on printing but also means that by incrementing we have 0... with all subdata entries
     $flag_HowTo[$flag_ind_current_iter] = -1;
-    #$flag_HowTo[$flag_ind_current_iter] = -1 if (!(blessed $ref));
-    #$flag_HowTo[$flag_ind_current_iter] = -1 if (ref $ref ne q{REF});
 
     my $ref_type = ref $ref;
 
@@ -1398,9 +1309,6 @@ sub _new_detection {
     my $start = ($key) ? qq{\x27$key\x27=>} : qq{}; # this always gets put in - just is generally empty
 
     #y if list-of-scalars of list-of-lists append appropriate info
-    
-    #y making lol and long_array seaparate
-    #my $end         =  ($flag_lol == 1 && $options{long_array} < 0 )           ?   &_array_ending($ref,1)       # $ending($ref,1) #$end_c_ref->($ref, 1) 
     my $end         =  ($flag_lol == 1 && $options{lol} > 0 )                   ?   &_array_ending($ref,1)       # $ending($ref,1) #$end_c_ref->($ref, 1) 
                     :  ($flag_long_array == 1 && $options{long_array} == 1)     ?   &_array_ending($ref,0)
                     :                                                               q{};
@@ -1482,12 +1390,10 @@ sub _adjust_indent {
     
     my ($ref, $key) = @_;
 
-    #y HACK TO FIX LONG ARRAY ALIGNMENT BUG - just removed -1 for each element index
     if ( ( $count > 2 ) && ( ( $flag_long_array == 1 ) || ( $flag_lol == 1 ) ) ) {
         for my $i (0..$#flag_indent_record) { $IndArray[$i] = $flag_indent_record[$i] > 0 ? $unit3 : $unit1; }
         $IndArray[$flag_ind_next_iter] = $unit2;
     }
-    #y moved here to allow us to use it to fix the strange indent problem - without recursion?!?
     $flag_long_array = 0;
     #y wipe used vars
     $lol = undef;
@@ -1502,40 +1408,20 @@ sub _adjust_indent {
     $current = 0;
 
     #b remove old excess parts of the array - i.e. it should never have more entries than the current indent level
-    # this is where we use decrement to reset things - i.e. ref2ref -i.e. printing!?!
     if ($count > 2 && $flag_dec == 1 ) {
             local $" = q{-};
         while( scalar @flag_indent_record > $flag_ind_next_iter) { pop @flag_indent_record; }
-        #while (scalar @flag_HowTo  > $next_element) { pop @flag_HowTo }
-        # while( $#flag_HowTo > $flag_ind_next_iter) { 
         while( scalar @flag_HowTo > $flag_ind_next_iter) { pop @flag_HowTo; }
 
         #y turn notation back on
         $flag_ref2ref = 0;
 
         #/ this is only here as we have it in the general decrement testing place - but ought to simply put before turning printint on
-        #y turn printing back off if printing hash-keys - here was bug of 0.0.1
-        #/ BUG RESOLUTION - duh. recurse prints last round of data. if hash key is found it turns ON printing. this part
-        #/ here turns off printing when we later decrement - however, IF the previous round had a decrement then we turn
-        #/ printing ON and OFF again before ever printing - need to add condition to stop turning off on same round -
-        #/ can either compare value to $key OR store key OR store count when turning on printing - thus avoiding this bug
-        #$flag_hash_key = 1 if (defined $options{hash_key});
         #r just check that the key isn´t the current key and thereby avoid switching off in same iteration - duh
         $flag_hash_key = 1 if ( (defined $options{hash_key}) && ($key ne $options{hash_key}));
-        #print qq{\ntemp - we are decrementing and key is $key};
     }
 
-    #/ AS THIS HAS NO REASON TO BE HERE WE REMOVE IT AND PUT IT ABOVE PRINT TURN ON - so don´t have issues about testing for $ref
     #y/ the only diff with scalar_val is we want to turn it off at every cycle and not just decrements - 
-    #/ to avoid the same bug as with the nasty one above we will need to check value of ref - so handy we passed it... - test with eith !ref $ref or ref \$ref eq q{SCALAR}
-    #y need to check that scalar_val exists to stop warnings...
-    #$flag_scalar_val = 1 if ( (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
-    #$flag_scalar_val = 1 if ( (exists $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
-    #if (exists $options{scalar_val}) { $flag_scalar_val = 1 if ( (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) ); }
-    #y you have the value in the initial hash - i.e. can´t use exists - need defined!!! - should remove from options initilisation
-    #$flag_scalar_val = 1 if ( (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
-    #y remove warning by checking $ref for defindness
-    #/ this leads to other problem - i.e. unlike with hash_key by putting defined on $ref to avoid turning off in same cycle we don´t turn of till next scalar
     #$flag_scalar_val = 1 if ( (defined $ref) && (defined $options{scalar_val}) && (ref \$ref eq q{SCALAR}) && ($ref ne $options{scalar_val}) );
 
     if ($count > 2) {for my $i (0..$#flag_indent_record-1) { $IndArray[$i] = $flag_indent_record[$i] > 0 ? $unit3 : $unit1; } }
@@ -1610,29 +1496,6 @@ sub _clean {
 }
 
 1; # Magic true value required at end of module
-
-#=fs notes/todo
-#/ $next_element is indentation from last iteration - it is cached at next and current for comparison and $contents is the print from the last iteration
-
-#r/ finish border printing option - should only be active with arrays and hashes and should detect the type
-
-#/ the incrementer - shoouldn´t increment - as with key it should put the atual element position in e.g. pass on $element value
-
-#/ with object recursion - the number () doesn´t change as the first round it is simply the object type - possibly change this?!? so put it on the first line with type...
-
-#/ any change based on if flag_dec == 1 should really specify a requirement on the next iteration depth - e.g. if min_depth >0 AND if decrementing to below it put in break
-
-#/ eventually pass $element with key - and use that to assign array position - instead of incrementing - probably always gives same result, but anyway is a extra check
-
-#r put in an option for max table printing length?!? with lol == 2
-
-#y (1) [ map 
-#y (2) ( map 
-#y (3) for my $i (@{$ref})                              { stuff; _deep_copy_references($i) }
-
-#y (1) _deep_copy_references($_) } @{$ref} ]; 
-#y (2) _deep_copy_references($i)}; 
-#=fe
 
 __END__
 
