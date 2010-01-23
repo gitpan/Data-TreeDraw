@@ -1,12 +1,12 @@
 package Data::TreeDraw;
 use strict;
-use warnings;
+#use warnings;
 use Scalar::Util qw/reftype blessed/;
 use Class::MOP;
 use Text::SimpleTable;
 use Carp;
 
-use version; our $VERSION = qv('0.0.3');
+use version; our $VERSION = qv('0.0.4');
 
 require Exporter ;
 our @ISA = qw(Exporter) ;
@@ -24,7 +24,7 @@ Data::TreeDraw - Graphical representation of nested data structures.
 
 =head1 VERSION
 
-This document describes Data::TreeDraw version 0.0.3
+This document describes Data::TreeDraw version 0.0.4
 
 =cut
 
@@ -380,7 +380,7 @@ indicate the nature of the values stored by the array).
 You can switch the length of array that triggers these two behaviours using the C<array_length> option (defaults to 3). See OPTIONS for further info.
 
 =cut
-=head2 Lists-of-Lists. 
+=head2 Lists-of-Lists
 
 In cases of Lists-of-lists the readability may suffer further - especially as these structures often
 correspond to 2-dim tables. Thus in cases of ARRAYS consisting uniquely of ARRAYS of SCALARS: 
@@ -781,7 +781,8 @@ my $flag_all_scl_and_long;
 my $scl_add;
 my $flag_new_id;
 my $flag_ind_next_iter;
-my $flag_ind_current_iter;
+#r/ this needs to be initialised apparently - but not sure how haven´t used it in ages
+my $flag_ind_current_iter = q{};
 my @IndArray;
 my $lol;
 my $current_struc;
@@ -861,7 +862,9 @@ sub _check_options {
 
     croak qq{\nOption \x27max_depth\x27 accepts values numeric values between 0 and 15 only} 
       if ( ( exists $options_h_ref->{max_depth} ) && ( ( $options_h_ref->{max_depth} !~ /\A\d{1,2}\z/xms ) 
-      || ($options_h_ref->{max_depth} < 0) || ($options_h_ref->{max_depth} > 10) ) );
+      #r/ bug fix
+      # || ($options_h_ref->{max_depth} < 0) || ($options_h_ref->{max_depth} > 10) ) );
+      || ($options_h_ref->{max_depth} < 0) || ($options_h_ref->{max_depth} > 15) ) );
     
     croak qq{\nOption \x27borders\x27 has not yet been fully implemented - email dsth\@cantab.net if you would like it implemented} if (exists $options_h_ref->{borders});
     
@@ -973,9 +976,17 @@ sub _recurse {
 
 }
 
+#r/ THE PROBLEM IS THAT KEYS ARE TRANSMITTED WITHIN $current AND USE THE BELOW $start CODE TO INTEGRATE THEM.
+#r every single thing needs one - so though you put the start in undefined its best to put it in if in general and apply ${start} within every current
+
+#/ need to try and recall how data is passed - usually within current using my $start = ($key) ? qq{\x27$key\x27=>} : q{} 
+#/ within $current - then: $current = qq{${start}$middle ($next_element)$end};
 sub _if_elsif_ref {
     
     my ($ref, $key) = @_;
+
+    #y/ BUG FIX - need to integrate $start into ALL currents!!!
+    my $start = ($key) ? qq{\x27$key\x27=>} : q{};
 
     #y (1) max dpeth
     if ($next_element >= $options{max_depth}+1) { &_exceeds_depth($ref, $key) }
@@ -984,10 +995,17 @@ sub _if_elsif_ref {
     elsif (!ref $ref) { &_type_ref_undef($ref, $key); } 
 
     #y (3) stupid handling - handing empty structure 
-    elsif (my $message = _undefined($ref)) {$current = qq{$message ($next_element) } }
+    elsif (my $message = &_undefined($ref)) {
+        #r/ $current = qq{$message ($next_element) }
+        #r/ no need for start here now - its in higher scope
+        #my $start = ($key) ? qq{\x27$key\x27=>} : qq{};
+        $current = qq{${start}$message ($next_element) }
+    }
 
     #y (4) check for cyclic references - i.e. having same value as root
-    elsif ( ( ( ref $ref eq q{ARRAY} || ref $ref eq q{HASH} ) && ( $ref eq $flag_root ) ) || $ref eq $flag_root_object ) { $current = qq{CYCLIC REFERENCE ($next_element)} }
+    #r/ hash key bug fix
+    #elsif ( ( ( ref $ref eq q{ARRAY} || ref $ref eq q{HASH} ) && ( $ref eq $flag_root ) ) || $ref eq $flag_root_object ) { $current = qq{CYCLIC REFERENCE ($next_element)} }
+    elsif ( ( ( ref $ref eq q{ARRAY} || ref $ref eq q{HASH} ) && ( $ref eq $flag_root ) ) || $ref eq $flag_root_object ) { $current = qq{${start}CYCLIC REFERENCE ($next_element)} }
 
     #y (5) LOLs
     elsif ( ( ref $ref eq q{ARRAY} ) && ( $options{lol} > 0 ) && ( scalar @{$ref} > 1 ) && ( &_array_lol_test($ref) == 1 ) ) { &_type_ref_lol($ref, $key); }
@@ -1450,7 +1468,8 @@ sub _array_all_scl_test {
 sub _clean {
 
     my @list = ($flag_class, $last_thing, $current_name, $basic, $basic_plus, $flag_all_scl_and_long, $scl_add,
-    $flag_new_id, $flag_ind_next_iter, $flag_ind_current_iter, $lol, $current_struc, $current, $flag_is_last, $flag_long_struc, $flag_now);
+    #$flag_new_id, $flag_ind_next_iter, $flag_ind_current_iter, $lol, $current_struc, $current, $flag_is_last, $flag_long_struc, $flag_now);
+    $flag_new_id, $flag_ind_next_iter, $lol, $current_struc, $current, $flag_is_last, $flag_long_struc, $flag_now);
 
     for (@list) { undef $_ }
 
@@ -1462,6 +1481,8 @@ sub _clean {
     undef @IndArray;
     undef @root;
 
+    #r/ this needs to be initialised apparently - but not sure how haven´t used it in ages
+    $flag_ind_current_iter = q{};
     $flag_root_object = q{};
     $flag_hash_key = 0;
     $flag_hash_key_found = 0;
@@ -1511,6 +1532,12 @@ Carp                => "1.08",
 =head1 AUTHOR
 
 Daniel S. T. Hughes  C<< <dsth@cantab.net> >>
+
+=cut
+
+=head1 BUGS
+
+I just had a late night attempt at bug fixing. Please let me know if I broke it.
 
 =cut
 
