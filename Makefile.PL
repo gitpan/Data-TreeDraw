@@ -15,6 +15,7 @@ WriteMakefile(
         'Class::MOP'            => "0.95",
         'Text::SimpleTable'     => "2.0",
         'Carp'                  => "1.08",
+        'MRO::Compat'   => '0',
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Data-TreeDraw-*' },

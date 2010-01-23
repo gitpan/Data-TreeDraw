@@ -6,7 +6,7 @@ use Class::MOP;
 use Text::SimpleTable;
 use Carp;
 
-use version; our $VERSION = qv('0.0.4');
+use version; our $VERSION = qv('0.0.5');
 
 require Exporter ;
 our @ISA = qw(Exporter) ;
@@ -24,7 +24,17 @@ Data::TreeDraw - Graphical representation of nested data structures.
 
 =head1 VERSION
 
-This document describes Data::TreeDraw version 0.0.4
+This document describes Data::TreeDraw version 0.0.5
+
+=cut
+
+=head1 UPDATES
+
+I noticed that object in some classes that use overloading killed the program. So now the program copies/strips the raw
+data from a class (nested or root) before continuing. This way it should now handle objects from any class.
+
+While fixing the above problem I ended up extending the notation option so that it works with the the
+C<unwrap_objects> option. You can now get the appropriate notation within heavily nested object references.
 
 =cut
 
@@ -801,7 +811,7 @@ sub draw {
    
     my $options_h_ref = shift if $_[0]; # can use if @_ or do it before unpacking the rest... blah
 
-    croak qq{\nArguments must be passed as HASH reference.} if ( ( $options_h_ref ) && ( ref $options_h_ref ne q{HASH} ) );
+    croak qq{\nData and arguments must be passed by reference.} if ( ( $options_h_ref ) && ( ref $options_h_ref ne q{HASH} ) );
 
     &_check_options($options_h_ref) if $options_h_ref;
 
@@ -976,28 +986,45 @@ sub _recurse {
 
 }
 
-#r/ THE PROBLEM IS THAT KEYS ARE TRANSMITTED WITHIN $current AND USE THE BELOW $start CODE TO INTEGRATE THEM.
-#r every single thing needs one - so though you put the start in undefined its best to put it in if in general and apply ${start} within every current
-
-#/ need to try and recall how data is passed - usually within current using my $start = ($key) ? qq{\x27$key\x27=>} : q{} 
-#/ within $current - then: $current = qq{${start}$middle ($next_element)$end};
+#/ key is passed within current using my $start = ($key) ? qq{\x27$key\x27=>} : q{} and: $current - then: $current = qq{${start}$middle ($next_element)$end};
 sub _if_elsif_ref {
-    
+
     my ($ref, $key) = @_;
 
     #y/ BUG FIX - need to integrate $start into ALL currents!!!
     my $start = ($key) ? qq{\x27$key\x27=>} : q{};
 
+    #y if they overloaded '>=´ it will screw things
+    # carp qq{\n\nOBJECT USES OVERLOADING} if (ref $ref && overload::Overloaded($ref)) ;
+    
+    #/ this is a major element - the problem with matrixreal is its operator overriding kills the program. so we
+    #/ elimininate this as an option before it kills the program with max depth test. we either do it for ALL objects
+    #/ - in which case the next step should work - we can call the program on matrices as it unwraps them first - just as
+    #/ this does - hence we will catch exceeding depth one step late this way. alternatively we have a separate test just
+    #/ for matrices - but this will blow up with other objects that function in the same manner
+    #y (0) object
+    if (my $class = blessed $ref) { 
+        if ($options{unwrap_objects} == 0) { $current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) }; }
+        else { &_object_recursion($ref, $key, $class) }
+    }
+    
+    # #y (0) heres a hack to get round problem introduced by Math::MatrixReal overloading?!?
+    #if (ref $ref eq q{Math::MatrixReal}) { 
+    #    if ($options{unwrap_objects} == 0) { $current = qq{BLESSED OBJECT BELONGING TO CLASS: Math::MatrixReal ($next_element) }; }
+    #    else { &_object_recursion($ref, $key, q{Math::MatrixReal}) }
+    #}
+
     #y (1) max dpeth
-    if ($next_element >= $options{max_depth}+1) { &_exceeds_depth($ref, $key) }
+    #if ($next_element >= $options{max_depth}+1) { &_exceeds_depth($ref, $key) }
+    elsif ($next_element >= $options{max_depth}+1) { &_exceeds_depth($ref, $key) }
     
     #y (2) undefined ref - i.e. not a reference...
     elsif (!ref $ref) { &_type_ref_undef($ref, $key); } 
 
     #y (3) stupid handling - handing empty structure 
     elsif (my $message = &_undefined($ref)) {
-        #r/ $current = qq{$message ($next_element) }
-        #r/ no need for start here now - its in higher scope
+        #r $current = qq{$message ($next_element) }
+        #r no need for start here now - its in higher scope
         #my $start = ($key) ? qq{\x27$key\x27=>} : qq{};
         $current = qq{${start}$message ($next_element) }
     }
@@ -1028,11 +1055,11 @@ sub _if_elsif_ref {
         }; 
     } 
     
-    #y (9) object
-    elsif (my $class = blessed $ref) { 
-        if ($options{unwrap_objects} == 0) { $current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) }; }
-        else { &_object_recursion($ref, $key, $class) }
-    }
+    # #y (9) object
+    #elsif (my $class = blessed $ref) { 
+    #    if ($options{unwrap_objects} == 0) { $current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) }; }
+    #    else { &_object_recursion($ref, $key, $class) }
+    #}
 
     #y (10) REF
     elsif (ref $ref eq q{REF}) {
@@ -1041,10 +1068,10 @@ sub _if_elsif_ref {
     }
 
     #y (11) code ref
-    elsif (ref $ref eq q{CODE}) { $current = qq{CODE REFERENCE: $ref ($next_element) } }
+    elsif (ref $ref eq q{CODE}) { $current = qq{${start}CODE REFERENCE: $ref ($next_element) } }
 
-    #y (12) glob
-    elsif (ref $ref eq q{GLOB}) { $current = qq{GLOB REFERENCE: $ref ($next_element) } }
+    #y (12) glob - globs aren´t actually handled here - just insurance mechanism
+    elsif (ref $ref eq q{GLOB}) { $current = qq{${start}GLOB REFERENCE: $ref ($next_element) } }
    
 
     #y (13) stupid handling - handling ref2refs to scalars will need the same treatement as references i.e. need to recurse
@@ -1133,18 +1160,33 @@ sub _type_ref2ref {
 
 sub _object_recursion { 
 
+    #/ there were two ways of fixing the notation with objects problem. disable incrementation if an object or instead
+    #/ of returning the unwrapped object - i.e. the object just made its type back into scalar, hash... we iterate
+    #/ directly through its contents - just as we do with array and hashes already. may need to put lol and long optins in here
+
     my ($ref, $key, $class) = @_;
     &_type_array($ref, $key);
-    $current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) ---RECURSING-INTO-OBJECT--- };
-    #y use the ref2ref thing to also turn off notation here
-    $flag_ref2ref = 1;
+    #y notation fix 1:
+    my $reftype = reftype($ref);
+    $current = qq{Blessed object of type \x27$reftype\x27 belonging to class: \x27$class\x27 ($next_element) ---RECURSING-INTO-OBJECT--- };
+    #$current = qq{BLESSED OBJECT BELONGING TO CLASS: $class ($next_element) ---RECURSING-INTO-OBJECT--- };
+    # disable the disabling of the notation with object recursion. we will instead need to unwrap the object early
+    #$flag_ref2ref = 1;
     $flag_object = 1;
     &_flags($ref); 
     &_new_detection($ref,$key);
     &_more_flags($ref);
     my ($package, $x, $line ) = caller;
     $flag_class = $class;    
-    &_recurse(&_object_unwrap($ref, $class, $package));
+
+    #&_recurse(&_object_unwrap($ref, $class, $package));
+    $ref = &_object_unwrap($ref, $class, $package);
+
+    #r notation fix
+    if ($reftype eq q{ARRAY}) { for my $i (@$ref) { &_recurse($i)}; } 
+    elsif ($reftype eq q{HASH}) { for my $i (keys %{$ref}) { &_recurse($ref->{$i}, $i) } }
+    elsif ($reftype eq q{SCALAR}) { &_recurse(${$ref}) }
+    else { croak qq{\nI only recurse into objects of type SCALAR, ARRAY or HASH.};}
 
 }
 
@@ -1526,7 +1568,7 @@ Scalar::Util        => "1.22",
 Class::MOP          => "0.95",
 Text::SimpleTable   => "2.0",
 Carp                => "1.08",
-
+'MRO::Compat'       => '0', # on Solaris
 =cut
 
 =head1 AUTHOR
@@ -1537,7 +1579,9 @@ Daniel S. T. Hughes  C<< <dsth@cantab.net> >>
 
 =head1 BUGS
 
-I just had a late night attempt at bug fixing. Please let me know if I broke it.
+I just had a late night attempt at bug fixing. Please let me know if I broke it. Hash keys pointing to GLOBS, Code-Refs
+and Uninitialised ARRAYS, HASH refs now print (was a silly oversight). Thanks to the Perl Testers who let me know about
+an installation problem with Solaris. It should now work fine on Solaris.
 
 =cut
 

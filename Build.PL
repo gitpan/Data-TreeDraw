@@ -14,6 +14,7 @@ my $builder = Module::Build->new(
         'Class::MOP'            => "0.95",
         'Text::SimpleTable'     => "2.0",
         'Carp'                  => "1.08",
+        'MRO::Compat'   => '0',
     },
     add_to_cleanup      => [ 'Data-TreeDraw-*' ],
 );
